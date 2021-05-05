@@ -6,32 +6,11 @@ server, though with few additions it can be made to be used in a multi-threaded
 environment.
 
 ## Example of use
-### Tcp Connection
+### Tcp Server
 ```c
 
-int tcp_create(int port)
-{
-        int fd, err;
-        fd = socket(AF_INET, SOCK_STREAM, 0);
-        if (fd < 0)
-                return fd;
-        struct sockaddr_in sin;
-        memset(&sin, 0, sizeof(sin));
-        sin.sin_family      = AF_INET;
-        sin.sin_addr.s_addr = htonl(INADDR_ANY);
-        sin.sin_port        = htons(port);
-
-        if ((err = bind(fd, (struct sockaddr *) &sin, sizeof(sin))) < 0)
-                return err;
-        if ((err = listen(fd, SOMAXCONN)) < 0)
-                return err;
-        int flags = fcntl(fd, F_GETFL, 0);
-        if ((err = fcntl(fd, F_SETFL, flags | O_NONBLOCK)) < 0)
-                return err;
-        return fd;
-}
-
-
+int tcp_create(int port);
+//create tcp connection
 
 struct tcp_handle {
         void (*master_error)(int err);
@@ -39,92 +18,33 @@ struct tcp_handle {
         void (*failure_nonblocking)(int err);
         void (*func)(int fd, void *buffer, enum events events);
 };
-
 struct buffer {
         char *data;
         int len, cap;
 };
-void tcp_handle_con(int fd, void *_tcp_handle, enum events events)
+void tcp_handle_accept(int master, void *_tcp_handle, enum events events)
 {
-        struct tcp_handle *tcp_handle = _tcp_handle;
-        if (events == EPOLLERR) {
-                //these shouldn't be handled as lasily
-                (*tcp_handle->master_error)(errno);
-                return;
-        }
-        int slave;
-
-        struct sockaddr_in fsin;
-        memset(&fsin, 0, sizeof(fsin));
-        fsin.sin_family = AF_INET;
-        fsin.sin_port   = htons(13);
-        socklen_t len   = sizeof(fsin);
-        slave           = accept(fd, (struct sockaddr *) &fsin, &len);
-        if (slave < 0) {
-                if (errno != EINTR)
-                        (*tcp_handle->failure_accepting)(errno);
-                return;
-        }
-        int flags = fcntl(fd, F_GETFL, 0);
-        int err   = fcntl(fd, F_SETFL, flags | O_NONBLOCK);
-        if (err) {
-                (*tcp_handle->failure_nonblocking)(errno);
-                return;
-        }
-
-        struct buffer *buff = malloc(sizeof(struct buffer));
-        buff->len           = 0;
-        buff->cap           = 256;
-        buff->data          = malloc(buff->cap);
+        struct tcp_handle *handle = _tcp_handle;
+        assert(!events & EPOLL_ERR);
+        //handle the connection, master is able to accept, forward errors and
+        //new fd as prescibed by tcp_handle
+        int slave = accept(master);
+        ...
+        struct buffer *b = malloc(sizeof(b));
+        b->cap = 256;
+        b->data = malloc(b->cap);
+        b->len = 0;
 
         struct continuation continuation;
-        continuation.func = tcp_handle->func;
-        continuation.data = buff;
+        continuation.func = handle->func;
+        continuation.data = b;
 
-        asio_add(asio, slave, EPOLLIN, continuation);
+        asio_add(slave, continuation);
 }
 
-void log_error_and_exit(int err)
-{
-        printf("error! %s", strerror(errno));
-        exit(err);
-}
+void log_error_and_exit(int err);
 
-void read_and_close(int fd, void *data, enum events events)
-{
-        if (events & EPOLL_ERR) {
-                close(fd);
-                free(data);
-                return;
-        }
-        assert(events & EPOLL_IN);
-        struct buffer *buffer = data;
-        int n = read(fd, buffer->data, buffer->cap - buffer->len);
-        if (n < 0) {
-                close(fd);
-                free(buffer->data);
-                free(buffer);
-                return;
-        }
-        buffer->len += n;
-        while (buffer->len == buffer->cap) {
-                buffer->cap *= 2;
-                buffer->data = realloc(buffer->data, buffer->cap);
-                n = read(fd, buffer->data, buffer->cap - buffer->len);
-                if (n < 0) {
-                        close(fd);
-                        free(buffer->data);
-                        free(buffer);
-                        return;
-                }
-                buffer->len += buffer->cap;
-        }
-        write(1, buffer->data, buffer->len);
-        close(fd);
-        free(buffer->data);
-        free(buffer);
-}
-
+void read_and_close(int fd, void *data, enum events events);
 
 int main()
 {
