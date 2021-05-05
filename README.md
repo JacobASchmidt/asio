@@ -7,7 +7,7 @@ environment.
 
 ## Example of use
 ### Tcp Connection
-```
+```c
 
 int tcp_create(int port)
 {
