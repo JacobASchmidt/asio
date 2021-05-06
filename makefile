@@ -7,7 +7,7 @@ SRCS=$(wildcard $(SRC)/*.c)
 OBJS=$(patsubst $(SRC)/%.c, $(OBJ)/%.o, $(SRCS))
 ASMS=$(patsubst $(SRC)/%.c, $(ASM)/%.s, $(SRCS))
 BINDIR=lib
-BIN=$(BINDIR)/libasio.a
+BIN=$(BINDIR)/libjasio.a
 
 all: $(BIN) asm
 

@@ -1,74 +1,55 @@
-# asio
+# jasio
 
-asio is a minimalist asynchronous-io library. 
-It gives the neccessary building blocks to build a single-threaded concurrent
-server, though with few additions it can be made to be used in a multi-threaded
-environment.
+jasio is a minimalist asynchronous-io library with no dependencies. 
+It gives the neccessary building blocks to build a single-threaded edge-triggered
+concurrent server, though with few additions it can be made to be used in a 
+multi-threaded environment.
 
-## Example of use
-### Tcp Server
+
+## Documentation
+
+There are two major types is jasio, `struct jasio_continuation` and `struct jasio`.
+`struct jasio` allows you to register a callback to a file descriptor whenever
+it is ready and nonblocking for the given event type you specify. The callback
+function must have the function signature 
+```void (*)(int fd, void *data, enum jasio_events events)```,
+where `fd` is the ready file descriptor, `data` is the user defined hook 
+that allows you to put your data in the function, and `events` are the 
+events that are ready and non-blocking on the file descriptor. `struct jasio_coninuation`
+is the means by which you can add the callback, for example:
+```c
+void foo(struct jasio *jasio, int fd) {
+        struct jasio_continuation continuation;
+        continuation.func = &my_callback;
+        continuation.data = my_data;
+        jasio_add(&jasio, fd, JASIO_IN, continuation);
+        // jasio will call mycallback(fd, my_data, events) when fd is nonblocking,
+        // and events are whatever events are non-blocking at the time
+}
+```
+### Note:
+#### 1) events may contain JASIO_ERR, in which case the specific error can be found in errno.
+#### 2) 
+
 ```c
 
-int tcp_create(int port);
-//create tcp connection
-
-struct tcp_handle {
-        void (*master_error)(int err);
-        void (*failure_accepting)(int err);
-        void (*failure_nonblocking)(int err);
-        void (*func)(int fd, void *buffer, enum events events);
+struct jasio_continuation {
+        void (*func)(int fd, void *data, enum jasio_events events);
+        void *data;
 };
-struct buffer {
-        char *data;
-        int len, cap;
-};
-void tcp_handle_accept(int master, void *_tcp_handle, enum events events)
-{
-        struct tcp_handle *handle = _tcp_handle;
-        assert(!events & EPOLL_ERR);
-        //handle the connection, master is able to accept, forward errors and
-        //new fd as prescibed by tcp_handle
-        int slave = accept(master);
-        ...
-        struct buffer *b = malloc(sizeof(b));
-        b->cap = 256;
-        b->data = malloc(b->cap);
-        b->len = 0;
 
-        struct continuation continuation;
-        continuation.func = handle->func;
-        continuation.data = b;
+void jasio_create(struct jasio *asio, int cap);
 
-        asio_add(slave, continuation);
-}
+int jasio_add(struct jasio *asio, int fd, enum jasio_events events,
+              struct jasio_continuation continuation);
 
-void log_error_and_exit(int err);
+int  jasio_modify_events(struct jasio *asio, int fd, enum jasio_events events);
+void jasio_modify_continuation(struct jasio *asio, int fd,
+                               struct jasio_continuation continuation);
 
-void read_and_close(int fd, void *data, enum events events);
+int jasio_remove(struct jasio *asio, int fd);
+int jasio_destroy(struct jasio *asio);
 
-int main()
-{
-        int master = tcp_create(8080);
-
-
-        struct tcp_handle tcp_handle;
-        tcp_handle.master_error = &log_error_and_exit;
-        tcp_handle.failure_accepting = &log_error_and_exit;
-        tcp_handle.failure_nonblocking = &log_error_and_exit;
-        tcp_handle.func = &read_and_close;
-        
-        struct continuation continuation;
-        continuation.func = &tcp_handle_con;
-        continuation.data = &tcp_handle;
-
-        int initial_cap = 0;
-        struct asio asio;
-        asio_init(&asio, initial_cap);
-
-        asio_add(master, continuation);
-        
-        int timeout = -1;
-        asio_run(timeout);
-}
+void jasio_run(struct jasio *asio, int timeout);
 
 ```
