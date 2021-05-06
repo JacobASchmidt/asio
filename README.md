@@ -29,27 +29,6 @@ void foo(struct jasio *jasio, int fd) {
 ```
 ### Note:
 #### 1) events may contain JASIO_ERR, in which case the specific error can be found in errno.
-#### 2) 
+#### 2) jasio does not take ownership of data given to it, users must free their data after use.
 
-```c
-
-struct jasio_continuation {
-        void (*func)(int fd, void *data, enum jasio_events events);
-        void *data;
-};
-
-void jasio_create(struct jasio *asio, int cap);
-
-int jasio_add(struct jasio *asio, int fd, enum jasio_events events,
-              struct jasio_continuation continuation);
-
-int  jasio_modify_events(struct jasio *asio, int fd, enum jasio_events events);
-void jasio_modify_continuation(struct jasio *asio, int fd,
-                               struct jasio_continuation continuation);
-
-int jasio_remove(struct jasio *asio, int fd);
-int jasio_destroy(struct jasio *asio);
-
-void jasio_run(struct jasio *asio, int timeout);
-
-```
+look in headers for more documentation.
