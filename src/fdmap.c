@@ -3,34 +3,37 @@
 #include <stdlib.h>
 #include <assert.h>
 
-void fdmap_create(struct fdmap *fdmap, int cap)
+void jasio_fdmap_create(struct jasio_fdmap *fdmap, int cap)
 {
-        fdmap->data = malloc(sizeof(struct continuation) * cap);
+        fdmap->data = malloc(sizeof(struct jasio_continuation) * cap);
         fdmap->cap  = cap;
 }
 
-void fdmap_add(struct fdmap *fdmap, int fd, struct continuation continuation)
+void jasio_fdmap_add(struct jasio_fdmap *fdmap, int fd,
+                     struct jasio_continuation continuation)
 {
         if (fd >= fdmap->cap) {
-                fdmap->cap  = bit_ceil((fdmap->cap + 1) | (fd + 1));
-                fdmap->data = realloc(fdmap->data,
-                                      fdmap->cap * sizeof(struct continuation));
+                fdmap->cap = bit_ceil((fdmap->cap + 1) | (fd + 1));
+                fdmap->data =
+                        realloc(fdmap->data,
+                                fdmap->cap * sizeof(struct jasio_continuation));
         }
         fdmap->data[fd] = continuation;
 }
 
-struct continuation fdmap_get(struct fdmap *fdmap, int fd)
+struct jasio_continuation jasio_fdmap_get(struct jasio_fdmap *fdmap, int fd)
 {
         assert(fd < fdmap->cap);
         return fdmap->data[fd];
 }
-void fdmap_set(struct fdmap *fdmap, int fd, struct continuation continuation)
+void jasio_fdmap_set(struct jasio_fdmap *fdmap, int fd,
+                     struct jasio_continuation continuation)
 {
         assert(fd < fdmap->cap);
         fdmap->data[fd] = continuation;
 }
 
-void fdmap_destroy(struct fdmap *fdmap)
+void jasio_fdmap_destroy(struct jasio_fdmap *fdmap)
 {
         free(fdmap->data);
 }

@@ -1,21 +1,21 @@
 #pragma once
 #include "fdmap.h"
 
-struct asio {
-        int          poll_fd;
-        struct fdmap fdmap;
+struct jasio {
+        int                poll_fd;
+        struct jasio_fdmap fdmap;
 };
 
-void asio_create(struct asio *asio, int cap);
+void jasio_create(struct jasio *asio, int cap);
 
-int asio_add(struct asio *asio, int fd, enum events events,
-             struct continuation continuation);
+int jasio_add(struct jasio *asio, int fd, enum jasio_events events,
+              struct jasio_continuation continuation);
 
-int  asio_modify_events(struct asio *asio, int fd, enum events events);
-void asio_modify_continuation(struct asio *asio, int fd,
-                              struct continuation continuation);
+int  jasio_modify_events(struct jasio *asio, int fd, enum jasio_events events);
+void jasio_modify_continuation(struct jasio *asio, int fd,
+                               struct jasio_continuation continuation);
 
-int asio_remove(struct asio *asio, int fd);
-int asio_destroy(struct asio *asio);
+int jasio_remove(struct jasio *asio, int fd);
+int jasio_destroy(struct jasio *asio);
 
-void asio_run(struct asio *asio, int timeout);
+void jasio_run(struct jasio *asio, int timeout);

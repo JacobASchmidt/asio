@@ -4,47 +4,47 @@
 #include <errno.h>
 #include <assert.h>
 
-void asio_create(struct asio *asio, int cap)
+void jasio_create(struct jasio *asio, int cap)
 {
-        fdmap_create(&asio->fdmap, cap);
+        jasio_fdmap_create(&asio->fdmap, cap);
         asio->poll_fd = epoll_create1(0);
 }
 
-int asio_add(struct asio *asio, int fd, enum events events,
-             struct continuation continuation)
+int jasio_add(struct jasio *asio, int fd, enum jasio_events events,
+              struct jasio_continuation continuation)
 {
         struct epoll_event e;
         e.data.fd = fd;
         e.events  = (int) events;
-        fdmap_add(&asio->fdmap, fd, continuation);
+        jasio_fdmap_add(&asio->fdmap, fd, continuation);
 
         return epoll_ctl(asio->poll_fd, EPOLL_CTL_ADD, fd, &e);
 }
 
-int asio_modify_events(struct asio *asio, int fd, enum events events)
+int jasio_modify_events(struct jasio *asio, int fd, enum jasio_events events)
 {
         struct epoll_event e;
         e.data.fd = fd;
         e.events  = (int) events;
         return epoll_ctl(asio->poll_fd, EPOLL_CTL_MOD, fd, &e);
 }
-void asio_modify_continuation(struct asio *asio, int fd,
-                              struct continuation continuation)
+void jasio_modify_continuation(struct jasio *asio, int fd,
+                               struct jasio_continuation continuation)
 {
-        fdmap_set(&asio->fdmap, fd, continuation);
+        jasio_fdmap_set(&asio->fdmap, fd, continuation);
 }
 
-int asio_remove(struct asio *asio, int fd)
+int jasio_remove(struct jasio *asio, int fd)
 {
         return epoll_ctl(asio->poll_fd, EPOLL_CTL_DEL, fd, NULL);
 }
 
-void asio_run(struct asio *asio, int timeout)
+void jasio_run(struct jasio *asio, int timeout)
 {
         struct epoll_event *events = NULL;
         int                 cap    = 0;
 
-        struct continuation continuation;
+        struct jasio_continuation continuation;
         for (;;) {
                 if (asio->fdmap.cap > cap) {
                         cap    = asio->fdmap.cap;
@@ -58,9 +58,9 @@ void asio_run(struct asio *asio, int timeout)
                 }
                 for (int i = 0; i < n; ++i) {
                         int fd       = events[i].data.fd;
-                        continuation = fdmap_get(&asio->fdmap, fd);
+                        continuation = jasio_fdmap_get(&asio->fdmap, fd);
                         continuation.func(fd, continuation.data,
-                                          (enum events) events[i].events);
+                                          (enum jasio_events) events[i].events);
                 }
         }
 }
