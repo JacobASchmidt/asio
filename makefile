@@ -9,10 +9,16 @@ ASMS=$(patsubst $(SRC)/%.c, $(ASM)/%.s, $(SRCS))
 BINDIR=lib
 BIN=$(BINDIR)/libjasio.a
 
-all: $(BIN) asm
+all: $(BINDIR) $(OBJ) $(ASM) $(BIN) asm
 
+$(BINDIR):
+	mkdir $(BINDIR)
+$(OBJ):
+	mkdir $(OBJ)
+$(ASM):
+	mkdir $(ASM)
 
-$(BIN): $(OBJS) $(ASMS)
+$(BIN): $(BINDIR) $(OBJS) $(ASMS)
 	ar rcs $(BIN) $(OBJS)
 
 $(OBJ)/%.o: $(SRC)/%.c 
@@ -21,12 +27,14 @@ $(OBJ)/%.o: $(SRC)/%.c
 $(ASM)/%.s: $(SRC)/%.c
 	$(CC) $(FLAGS) -c -S $< -o $@
 
-clean:
+clean: 
 	rm -r $(BINDIR)/* $(OBJ)/* $(ASM)/* 
+	rmdir asm lib obj
 
 install: $(BIN)
-	sudo cp -rf include/* /usr/local/lib/
+	sudo cp src/continuation.h /usr/local/lib/
+	sudo cp src/fdmap.h /usr/local/lib/
+	sudo cp src/jasio.h /usr/local/lib/
 	sudo cp lib/* /usr/local/lib
-
 run: $(BIN)
 	./$(BIN)
