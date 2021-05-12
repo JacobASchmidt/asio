@@ -24,10 +24,11 @@ SOFTWARE.
 */
 
 #include "jasio.h"
-#include <assert.h>
-#include <errno.h>
 #include <stdlib.h>
 #include <sys/epoll.h>
+#include <errno.h>
+#include <assert.h>
+#include <stdbool.h>
 
 void jasio_create(struct jasio *jasio, int cap)
 {
@@ -88,4 +89,5 @@ void jasio_run(struct jasio *jasio, int timeout)
 					  (enum jasio_events)events[i].events);
 		}
 	}
+	assert(false);
 }
