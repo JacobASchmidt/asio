@@ -25,18 +25,18 @@ SOFTWARE.
 #include "fdmap.h"
 
 struct jasio {
-        int                poll_fd;
-        struct jasio_fdmap fdmap;
+	int poll_fd;
+	struct jasio_fdmap fdmap;
 };
 
 void jasio_create(struct jasio *jasio, int cap);
 
 int jasio_add(struct jasio *jasio, int fd, enum jasio_events events,
-              struct jasio_continuation continuation);
+	      struct jasio_continuation continuation);
 
-int  jasio_modify_events(struct jasio *jasio, int fd, enum jasio_events events);
+int jasio_modify_events(struct jasio *jasio, int fd, enum jasio_events events);
 void jasio_modify_continuation(struct jasio *jasio, int fd,
-                               struct jasio_continuation continuation);
+			       struct jasio_continuation continuation);
 
 int jasio_remove(struct jasio *jasio, int fd);
 int jasio_destroy(struct jasio *jasio);
