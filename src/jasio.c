@@ -24,68 +24,68 @@ SOFTWARE.
 */
 
 #include "jasio.h"
+#include <assert.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <sys/epoll.h>
-#include <errno.h>
-#include <assert.h>
 
 void jasio_create(struct jasio *jasio, int cap)
 {
-        jasio_fdmap_create(&jasio->fdmap, cap);
-        jasio->poll_fd = epoll_create1(0);
+	jasio_fdmap_create(&jasio->fdmap, cap);
+	jasio->poll_fd = epoll_create1(0);
 }
 
 int jasio_add(struct jasio *jasio, int fd, enum jasio_events events,
-              struct jasio_continuation continuation)
+	      struct jasio_continuation continuation)
 {
-        struct epoll_event e;
-        e.data.fd = fd;
-        e.events  = (int) events;
-        jasio_fdmap_add(&jasio->fdmap, fd, continuation);
+	struct epoll_event e;
+	e.data.fd = fd;
+	e.events = (int)events;
+	jasio_fdmap_add(&jasio->fdmap, fd, continuation);
 
-        return epoll_ctl(jasio->poll_fd, EPOLL_CTL_ADD, fd, &e);
+	return epoll_ctl(jasio->poll_fd, EPOLL_CTL_ADD, fd, &e);
 }
 
 int jasio_modify_events(struct jasio *jasio, int fd, enum jasio_events events)
 {
-        struct epoll_event e;
-        e.data.fd = fd;
-        e.events  = (int) events;
-        return epoll_ctl(jasio->poll_fd, EPOLL_CTL_MOD, fd, &e);
+	struct epoll_event e;
+	e.data.fd = fd;
+	e.events = (int)events;
+	return epoll_ctl(jasio->poll_fd, EPOLL_CTL_MOD, fd, &e);
 }
 void jasio_modify_continuation(struct jasio *jasio, int fd,
-                               struct jasio_continuation continuation)
+			       struct jasio_continuation continuation)
 {
-        jasio_fdmap_set(&jasio->fdmap, fd, continuation);
+	jasio_fdmap_set(&jasio->fdmap, fd, continuation);
 }
 
 int jasio_remove(struct jasio *jasio, int fd)
 {
-        return epoll_ctl(jasio->poll_fd, EPOLL_CTL_DEL, fd, NULL);
+	return epoll_ctl(jasio->poll_fd, EPOLL_CTL_DEL, fd, NULL);
 }
 
 void jasio_run(struct jasio *jasio, int timeout)
 {
-        struct epoll_event *events = NULL;
-        int                 cap    = 0;
+	struct epoll_event *events = NULL;
+	int cap = 0;
 
-        struct jasio_continuation continuation;
-        for (;;) {
-                if (jasio->fdmap.cap > cap) {
-                        cap    = jasio->fdmap.cap;
-                        events = realloc(events,
-                                         cap * sizeof(struct epoll_event));
-                }
-                int n = epoll_wait(jasio->poll_fd, events, cap, timeout);
-                if (n < 0) {
-                        assert(errno == EAGAIN || errno == EINTR);
-                        continue;
-                }
-                for (int i = 0; i < n; ++i) {
-                        int fd       = events[i].data.fd;
-                        continuation = jasio_fdmap_get(&jasio->fdmap, fd);
-                        continuation.func(fd, continuation.data,
-                                          (enum jasio_events) events[i].events);
-                }
-        }
+	struct jasio_continuation continuation;
+	for (;;) {
+		if (jasio->fdmap.cap > cap) {
+			cap = jasio->fdmap.cap;
+			events = realloc(events,
+					 cap * sizeof(struct epoll_event));
+		}
+		int n = epoll_wait(jasio->poll_fd, events, cap, timeout);
+		if (n < 0) {
+			assert(errno == EAGAIN || errno == EINTR);
+			continue;
+		}
+		for (int i = 0; i < n; ++i) {
+			int fd = events[i].data.fd;
+			continuation = jasio_fdmap_get(&jasio->fdmap, fd);
+			continuation.func(fd, continuation.data,
+					  (enum jasio_events)events[i].events);
+		}
+	}
 }

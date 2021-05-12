@@ -1,16 +1,19 @@
 CC=gcc
-FLAGS=-O3 -Wall -Wextra -Idep/include
+FLAGS=-O3 -Wall -Wextra
 SRC=src
 OBJ=obj
 ASM=asm
+TEST=test/main.c
 SRCS=$(wildcard $(SRC)/*.c)
 OBJS=$(patsubst $(SRC)/%.c, $(OBJ)/%.o, $(SRCS))
 ASMS=$(patsubst $(SRC)/%.c, $(ASM)/%.s, $(SRCS))
 BINDIR=lib
 BIN=$(BINDIR)/libjasio.a
 
-all: $(BINDIR) $(OBJ) $(ASM) $(BIN) asm
 
+
+
+all: $(BINDIR) $(OBJ) $(ASM) $(BIN) asm
 $(BINDIR):
 	mkdir $(BINDIR)
 $(OBJ):
@@ -38,3 +41,10 @@ install: $(BIN)
 	sudo cp lib/* /usr/local/lib
 run: $(BIN)
 	./$(BIN)
+
+
+
+test: FORCE
+	$(CC) $(FLAGS) $(TEST) $(OBJS) -o test/main 
+	./test/main
+FORCE: ;
