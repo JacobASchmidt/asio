@@ -35,10 +35,12 @@ clean:
 	rmdir asm lib obj
 
 install: $(BIN)
-	sudo cp src/continuation.h /usr/local/include/jasio/
-	sudo cp src/fdmap.h /usr/local/include/jasio/
-	sudo cp src/jasio.h /usr/local/include/jasio/
-	sudo cp lib/* /usr/local/lib
+	cp src/fdmap.h /usr/local/include/jasio/
+	cp src/jasio.h /usr/local/include/jasio/
+	cp src/time.h /usr/local/include/jasio/
+	cp src/tcp.h /usr/local/include/jasio/
+
+	cp lib/* /usr/local/lib
 run: $(BIN)
 	./$(BIN)
 

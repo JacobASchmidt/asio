@@ -1,6 +1,6 @@
-#include "jasio.h"
-#include "time.h"
-#include "tcp.h"
+#include <jasio/jasio.h>
+#include <jasio/time.h>
+#include <jasio/tcp.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -50,7 +50,7 @@ void send_response(int fd, void *data, enum jasio_event events)
 	close(fd);
 }
 
-int main()
+int main(void)
 {
 	jasio_create(&jasio);
 	int fd = jasio_tcp_create(8080, 40);
