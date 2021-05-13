@@ -1,40 +1,28 @@
 #pragma once
-/*
-MIT License
+#include <sys/epoll.h>
 
-Copyright (c) 2021 JacobASchmidt
+enum jasio_event {
+	JASIO_EVENT_IN = 0x001,
+	JASIO_EVENT_OUT = 0x004,
+	JASIO_EVENT_ERR = 0x008,
+};
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-*/
-#include "continuation.h"
+typedef void (*jasio_func)(int fd, void *data, enum jasio_event event);
+struct jasio_continuation {
+	jasio_func func;
+	void *data;
+};
 
 struct jasio_fdmap {
-	struct jasio_continuation *data;
+	struct jasio_continuation *continuations;
 	int cap;
 };
 
-void jasio_fdmap_create(struct jasio_fdmap *fdmap, int cap);
-void jasio_fdmap_add(struct jasio_fdmap *fdmap, int fd,
+void jasio_fdmap_create(struct jasio_fdmap *jasio);
+void jasio_fdmap_add(struct jasio_fdmap *jasio, int fd,
+		     struct jasio_continuation continuation);
+struct jasio_continuation jasio_fdmap_get(struct jasio_fdmap *jasio, int fd);
+void jasio_fdmap_set(struct jasio_fdmap *jasio, int fd,
 		     struct jasio_continuation continuation);
 
-struct jasio_continuation jasio_fdmap_get(struct jasio_fdmap *fdmap, int fd);
-void jasio_fdmap_set(struct jasio_fdmap *fdmap, int fd,
-		     struct jasio_continuation continuation);
-
-void jasio_fdmap_destroy(struct jasio_fdmap *fdmap);
+void jasio_fdmap_destroy(struct jasio_fdmap *jasio);
